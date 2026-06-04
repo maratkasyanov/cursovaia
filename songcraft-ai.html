@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Создание песен с помощью Suno AI — Курсовая работа</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --violet: #7B2FFF;
+    --violet-light: #9F5FFF;
+    --violet-soft: #EDE6FF;
+    --violet-glow: rgba(123,47,255,0.18);
+    --black: #0E0B16;
+    --dark: #1A1528;
+    --card-bg: #ffffff;
+    --text: #1E1530;
+    --muted: #6B6680;
+    --border: #E4DCFF;
+    --surface: #F7F4FF;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Manrope', sans-serif; background: #fff; color: var(--text); line-height: 1.7; overflow-x: hidden; }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 clamp(1rem, 5vw, 4rem);
+    display: flex; align-items: center; gap: 2rem; height: 60px;
+  }
+  .nav-links { display: flex; gap: 1.5rem; list-style: none; flex-wrap: wrap; }
+  .nav-links a { font-size: 0.8rem; font-weight: 600; text-decoration: none; color: var(--muted); transition: color 0.2s; }
+  .nav-links a:hover { color: var(--violet); }
+
+  /* HEADER */
+  header {
+    background: var(--black); color: #fff; position: relative; overflow: hidden;
+    padding: clamp(3rem,10vw,7rem) clamp(1.5rem,6vw,6rem);
+    min-height: 480px; display: flex; flex-direction: column; justify-content: center;
+  }
+  .header-grid {
+    position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(123,47,255,0.12) 1px,transparent 1px), linear-gradient(90deg,rgba(123,47,255,0.12) 1px,transparent 1px);
+    background-size: 60px 60px;
+  }
+  .header-orb { position: absolute; width: 520px; height: 520px; border-radius: 50%; background: radial-gradient(circle,rgba(123,47,255,0.55) 0%,transparent 70%); top: -140px; right: -100px; pointer-events: none; }
+  .header-orb2 { position: absolute; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle,rgba(255,95,135,0.3) 0%,transparent 70%); bottom: -80px; left: 10%; pointer-events: none; }
+  .header-content { position: relative; z-index: 2; max-width: 720px; }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(123,47,255,0.25); border: 1px solid rgba(123,47,255,0.5);
+    border-radius: 100px; padding: 0.35rem 1rem;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #c9a8ff; margin-bottom: 1.5rem;
+  }
+  .header-badge span { width: 6px; height: 6px; border-radius: 50%; background: #c9a8ff; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+  header h1 { font-family: 'Unbounded', sans-serif; font-size: clamp(1.8rem,4.5vw,3.4rem); font-weight: 900; line-height: 1.15; margin-bottom: 1.2rem; letter-spacing: -0.02em; }
+  header h1 em { font-style: normal; color: var(--violet-light); }
+  header p { font-size: clamp(0.95rem,2vw,1.15rem); color: rgba(255,255,255,0.65); max-width: 520px; font-weight: 500; }
+
+  /* SECTIONS */
+  section { padding: clamp(3rem,8vw,6rem) clamp(1.5rem,6vw,6rem); }
+  .section-label { display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--violet); background: var(--violet-soft); border-radius: 100px; padding: 0.3rem 0.9rem; margin-bottom: 1rem; }
+  h2 { font-family: 'Unbounded', sans-serif; font-size: clamp(1.5rem,3.5vw,2.3rem); font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; margin-bottom: 1rem; color: var(--text); }
+  .section-desc { font-size: 1rem; color: var(--muted); max-width: 620px; margin-bottom: 2.5rem; font-weight: 500; }
+
+  /* INTRO */
+  #intro { background: var(--surface); border-bottom: 1px solid var(--border); }
+  .intro-inner { display: grid; grid-template-columns: 1fr auto; gap: 2rem; align-items: center; max-width: 900px; }
+  .intro-text p { font-size: 1.05rem; color: var(--text); font-weight: 500; line-height: 1.8; }
+  .intro-icon { font-size: 7rem; line-height: 1; filter: drop-shadow(0 8px 32px rgba(123,47,255,0.35)); animation: floaty 4s ease-in-out infinite; flex-shrink: 0; }
+  @keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+
+  /* GENRES */
+  #genres { background: #fff; }
+  .genres-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.25rem; }
+
+  .genre-card {
+    background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 20px;
+    padding: 1.75rem 1.5rem; position: relative; overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.3s ease;
+    cursor: pointer;
+  }
+  .genre-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: 20px 20px 0 0; }
+  .genre-card.pop::before     { background: linear-gradient(90deg,#FF5F87,#FF9AC1); }
+  .genre-card.rock::before    { background: linear-gradient(90deg,#FF6B35,#FF9A3C); }
+  .genre-card.hiphop::before  { background: linear-gradient(90deg,#7B2FFF,#00C6A2); }
+  .genre-card.electro::before { background: linear-gradient(90deg,#00C6A2,#2196F3); }
+  .genre-card.jazz::before      { background: linear-gradient(90deg,#B8860B,#DAA520); }
+  .genre-card.rnb::before       { background: linear-gradient(90deg,#C2185B,#E91E8C); }
+  .genre-card.metal::before     { background: linear-gradient(90deg,#424242,#9E9E9E); }
+  .genre-card.reggae::before    { background: linear-gradient(90deg,#2E7D32,#CDDC39); }
+  .genre-card.classical::before { background: linear-gradient(90deg,#5C4A1E,#A0845C); }
+  .genre-card.indie::before     { background: linear-gradient(90deg,#7E57C2,#26C6DA); }
+  .genre-card:hover { transform: translateY(-6px) scale(1.01); box-shadow: 0 20px 48px rgba(123,47,255,0.15); border-color: var(--violet-light); }
+
+  .genre-emoji { font-size: 2.4rem; margin-bottom: 0.8rem; display: block; }
+  .genre-card h3 { font-family: 'Unbounded', sans-serif; font-size: 1rem; font-weight: 700; margin-bottom: 1.2rem; color: var(--text); }
+  .genre-row { margin-bottom: 0.9rem; }
+  .genre-row-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 0.3rem; }
+  .genre-row-val { font-size: 0.88rem; font-weight: 600; color: var(--text); line-height: 1.5; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
+  .tag { font-size: 0.72rem; font-weight: 700; padding: 0.22rem 0.65rem; border-radius: 100px; background: var(--violet-soft); color: var(--violet); }
+  .genre-card.pop .tag      { background: #FFE8EF; color: #C2185B; }
+  .genre-card.rock .tag     { background: #FFF0E8; color: #BF360C; }
+  .genre-card.hiphop .tag   { background: #EDE6FF; color: var(--violet); }
+  .genre-card.electro .tag  { background: #E0FAF5; color: #00796B; }
+  .genre-card.jazz .tag     { background: #FFF8E1; color: #B8860B; }
+  .genre-card.rnb .tag      { background: #FCE4EC; color: #C2185B; }
+  .genre-card.metal .tag    { background: #F5F5F5; color: #424242; }
+  .genre-card.reggae .tag   { background: #F1F8E9; color: #2E7D32; }
+  .genre-card.classical .tag{ background: #FFF3E0; color: #795548; }
+  .genre-card.indie .tag    { background: #EDE7F6; color: #512DA8; }
+  .card-hint { font-size: 0.67rem; font-weight: 600; color: var(--muted); margin-top: 1rem; opacity: 0.65; }
+
+  /* ACCORDION */
+  .genres-extra { overflow: hidden; max-height: 0; opacity: 0; margin-top: 0; transition: max-height 0.55s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease, margin-top 0.3s ease; }
+  .genres-extra.open { max-height: 1600px; opacity: 1; margin-top: 1.25rem; }
+  .genres-toggle-wrap { margin-top: 1.5rem; display: flex; justify-content: center; }
+  .btn-toggle-genres {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    background: transparent; border: 1.5px solid var(--border); border-radius: 100px;
+    font-family: 'Manrope', sans-serif; font-size: 0.85rem; font-weight: 700; color: var(--text);
+    padding: 0.75rem 1.75rem; cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+  }
+  .btn-toggle-genres:hover { border-color: var(--violet); color: var(--violet); background: var(--violet-soft); }
+  .btn-toggle-genres .chevron { transition: transform 0.35s ease; display: inline-block; }
+  .btn-toggle-genres.open .chevron { transform: rotate(180deg); }
+
+  /* POPUP */
+  .popup-overlay {
+    position: fixed; inset: 0; background: rgba(14,11,22,0.65); backdrop-filter: blur(6px);
+    z-index: 500; display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+  }
+  .popup-overlay.show { opacity: 1; pointer-events: all; }
+  .popup {
+    background: #fff; border-radius: 24px; padding: 2.5rem; max-width: 560px; width: 100%;
+    position: relative; box-shadow: 0 32px 80px rgba(0,0,0,0.3);
+    transform: translateY(24px) scale(0.97);
+    transition: transform 0.32s cubic-bezier(0.34,1.4,0.64,1);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .popup-overlay.show .popup { transform: translateY(0) scale(1); }
+  .popup-close {
+    position: absolute; top: 1.25rem; right: 1.25rem;
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1.5px solid var(--border); background: var(--surface);
+    cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); transition: background 0.2s, color 0.2s; line-height: 1;
+  }
+  .popup-close:hover { background: var(--violet-soft); color: var(--violet); }
+  .popup-stripe { height: 5px; border-radius: 100px; margin-bottom: 1.5rem; }
+  .popup-emoji { font-size: 2.8rem; margin-bottom: 0.5rem; display: block; }
+  .popup h3 { font-family: 'Unbounded', sans-serif; font-size: 1.35rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--text); }
+  .popup-section { margin-bottom: 1.2rem; }
+  .popup-section-title { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.45rem; }
+  .popup-section p { font-size: 0.91rem; color: var(--text); font-weight: 500; line-height: 1.75; }
+  .popup-tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+  .popup-tag { font-size: 0.74rem; font-weight: 700; padding: 0.28rem 0.8rem; border-radius: 100px; background: var(--violet-soft); color: var(--violet); }
+  .popup-example { background: var(--dark); border-radius: 12px; padding: 1rem 1.25rem; font-size: 0.82rem; color: #c9a8ff; line-height: 1.6; margin-top: 0.5rem; font-family: monospace; }
+  .popup-divider { border: none; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+
+  /* QUIZ */
+  #quiz { background: var(--dark); color: #fff; text-align: center; position: relative; overflow: hidden; }
+  #quiz::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center,rgba(123,47,255,0.3) 0%,transparent 65%); }
+  #quiz .section-label { background: rgba(123,47,255,0.35); color: #c9a8ff; }
+  #quiz h2 { color: #fff; }
+  #quiz .section-desc { color: rgba(255,255,255,0.6); margin: 0 auto 2rem; }
+  .quiz-inner { position: relative; z-index: 2; }
+  .quiz-btn { display: inline-flex; align-items: center; gap: 0.75rem; background: var(--violet); color: #fff; text-decoration: none; font-family: 'Unbounded', sans-serif; font-size: 0.9rem; font-weight: 700; padding: 1rem 2.5rem; border-radius: 100px; transition: background 0.2s, transform 0.2s, box-shadow 0.2s; box-shadow: 0 8px 30px rgba(123,47,255,0.45); }
+  .quiz-btn:hover { background: var(--violet-light); transform: translateY(-2px); box-shadow: 0 14px 40px rgba(123,47,255,0.55); }
+  .quiz-btn .arrow { font-size: 1.1rem; transition: transform 0.2s; }
+  .quiz-btn:hover .arrow { transform: translateX(4px); }
+  .quiz-stats { display: flex; justify-content: center; gap: 3rem; margin-top: 3rem; flex-wrap: wrap; }
+  .quiz-stat strong { display: block; font-family: 'Unbounded', sans-serif; font-size: 2rem; font-weight: 900; color: var(--violet-light); }
+  .quiz-stat span { font-size: 0.8rem; color: rgba(255,255,255,0.5); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* SUNO */
+  #suno { background: var(--surface); }
+  .suno-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2.5rem; }
+  .info-card { background: #fff; border: 1.5px solid var(--border); border-radius: 20px; padding: 1.75rem; }
+  .info-card-icon { font-size: 1.8rem; margin-bottom: 0.75rem; display: block; }
+  .info-card h4 { font-family: 'Unbounded', sans-serif; font-size: 0.88rem; font-weight: 700; color: var(--text); margin-bottom: 0.75rem; }
+  .info-card p { font-size: 0.9rem; color: var(--muted); font-weight: 500; line-height: 1.7; }
+  .info-card a { color: var(--violet); font-weight: 700; text-decoration: none; }
+  .info-card a:hover { text-decoration: underline; }
+  .prompt-section { background: var(--dark); border-radius: 20px; padding: 2rem; color: #fff; }
+  .prompt-section h4 { font-family: 'Unbounded', sans-serif; font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem; color: #c9a8ff; }
+  .prompt-section p { font-size: 0.82rem; color: rgba(255,255,255,0.5); margin-bottom: 1rem; }
+  #prompt-display { width: 100%; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(123,47,255,0.4); border-radius: 12px; padding: 1rem 1.25rem; font-family: 'Manrope', monospace; font-size: 0.88rem; color: #e0d0ff; resize: vertical; min-height: 90px; line-height: 1.6; outline: none; transition: border-color 0.2s; }
+  #prompt-display:focus { border-color: var(--violet-light); }
+  .prompt-actions { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
+  .btn-random { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--violet); color: #fff; border: none; border-radius: 100px; font-family: 'Manrope', sans-serif; font-size: 0.82rem; font-weight: 700; padding: 0.65rem 1.4rem; cursor: pointer; transition: background 0.2s, transform 0.15s; }
+  .btn-random:hover { background: var(--violet-light); transform: scale(1.03); }
+  .prompt-genre-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 100px; padding: 0.65rem 1.2rem; font-size: 0.78rem; font-weight: 700; color: rgba(255,255,255,0.6); }
+
+  /* EMAIL */
+  #upload { background: #fff; }
+  .upload-inner { max-width: 620px; }
+  .email-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 20px; padding: 2rem; margin-top: 2rem; }
+  .email-card-top { display: flex; align-items: center; gap: 1rem; background: #fff; border: 1.5px solid var(--border); border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 1.75rem; }
+  .email-icon { font-size: 2rem; flex-shrink: 0; }
+  .email-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.2rem; }
+  .email-address { font-family: 'Unbounded', sans-serif; font-size: 0.88rem; font-weight: 700; color: var(--violet); text-decoration: none; word-break: break-all; }
+  .email-address:hover { text-decoration: underline; }
+  .email-instructions { display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.75rem; }
+  .email-step { display: flex; align-items: flex-start; gap: 0.85rem; font-size: 0.9rem; font-weight: 500; color: var(--text); line-height: 1.5; }
+  .email-step em { font-style: normal; font-weight: 700; color: var(--violet); }
+  .step-num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--violet); color: #fff; font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 0.05rem; }
+  .btn-email { display: inline-flex; align-items: center; gap: 0.6rem; background: var(--violet); color: #fff; text-decoration: none; border-radius: 100px; font-family: 'Unbounded', sans-serif; font-size: 0.85rem; font-weight: 700; padding: 0.9rem 2.2rem; transition: background 0.2s, transform 0.15s, box-shadow 0.2s; box-shadow: 0 6px 24px rgba(123,47,255,0.3); }
+  .btn-email:hover { background: var(--violet-light); transform: translateY(-2px); box-shadow: 0 10px 32px rgba(123,47,255,0.4); }
+
+  /* FOOTER */
+  footer { background: var(--black); color: rgba(255,255,255,0.4); text-align: center; padding: 2.5rem 1.5rem; font-size: 0.8rem; font-weight: 500; }
+
+  /* RESPONSIVE */
+  @media(max-width:900px) {
+    .genres-grid { grid-template-columns: repeat(2,1fr); }
+    .suno-layout { grid-template-columns: 1fr; }
+    .intro-inner { grid-template-columns: 1fr; }
+    .intro-icon { display: none; }
+  }
+  @media(max-width:540px) {
+    .genres-grid { grid-template-columns: 1fr; }
+    .nav-links { gap: 1rem; }
+  }
+  @media(max-width:400px) { .nav-links { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- POPUP OVERLAY -->
+<div class="popup-overlay" id="popup-overlay" onclick="closePopupOnOverlay(event)">
+  <div class="popup" id="popup">
+    <button class="popup-close" onclick="closePopup()">✕</button>
+    <div class="popup-stripe" id="popup-stripe"></div>
+    <span class="popup-emoji" id="popup-emoji"></span>
+    <h3 id="popup-title"></h3>
+    <div id="popup-body"></div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <ul class="nav-links">
+    <li><a href="#genres">Жанры</a></li>
+    <li><a href="#suno">Suno AI</a></li>
+    <li><a href="#quiz">Тест</a></li>
+    <li><a href="#upload">Загрузить трек</a></li>
+  </ul>
+</nav>
+
+<!-- HEADER -->
+<header>
+  <div class="header-grid"></div>
+  <div class="header-orb"></div>
+  <div class="header-orb2"></div>
+  <div class="header-content">
+    <h1>Онлайн-курс «Стилевые особенности песен<br /><em>и создание музыки</em><br />в Suno AI»</h1>
+    <p>В ходе данного курса вы изучите особенности различных музыкальных стилей и познакомитесь с возможностями Suno AI.</p>
+  </div>
+</header>
+
+<!-- BLOCK 2: GENRES -->
+<section id="genres">
+  <div class="section-label">Теоретическая часть</div>
+  <h2>Стилевые особенности жанров</h2>
+  <p class="section-desc">Нажмите на любую карточку, чтобы увидеть расширенное описание жанра и пример промпта для Suno AI.</p>
+
+  <!-- ОСНОВНЫЕ 4 -->
+  <div class="genres-grid" id="genres-main">
+
+    <div class="genre-card pop" onclick="openPopup('pop')">
+      <span class="genre-emoji">🎤</span>
+      <h3>Поп</h3>
+      <div class="genre-row">
+        <span class="genre-row-label">🎸 Инструменты</span>
+        <div class="tag-list"><span class="tag">Драм-машина</span><span class="tag">Синтезаторы</span><span class="tag">Синтезированный бас</span></div>
+      </div>
+      <div class="genre-row">
+        <span class="genre-row-label">🎙 Вокал</span>
+        <span class="genre-row-val">Легато, синкопы, белтинг в припеве, адлибы, автотюн</span>
+      </div>
+      <div class="genre-row">
+        <span class="genre-row-label">🔊 Звук</span>
+        <span class="genre-row-val">Sidechain-компрессия, квантование, four-on-the-floor</span>
+      </div>
+      <div class="card-hint">👆 Нажмите для подробностей</div>
+    </div>
+
+    <div class="genre-card rock" onclick="openPopup('rock')">
+      <span class="genre-emoji">🎸</span>
+      <h3>Рок</h3>
+      <div class="genre-row">
+        <span class="genre-row-label">🎸 Инструменты</span>
+        <div class="tag-list"><span class="tag">Электрогитара</span><span class="tag">Живые ударные</span><span class="tag">Бас-гитара</span></div>
+      </div>
+      <div class="genre-row">
+        <span class="genre-row-label">🎙 Вокал</span>
+        <span class="genre-row-val">Грудное пение с опорой, рок-крик, широкое вибрато 4–5 кол/сек</span>
+      </div>
+      <div class="genre-row">
+        <span class="genre-row-label">🔊 Звук</span>
+        <span class="genre-row-val">Только живые инструменты, пауэр-аккорды, пальмовый мьютинг</span>
+      </div>
+      <div class="card-hint">👆 Нажмите для подробностей</div>
+    </div>
+
+    <div class="genre-card hiphop" onclick="openPopup('hiphop')">
+      <span class="genre-emoji">🎙</span>
+      <h3>Хип-хоп</h3>
+      <div class="genre-row">
+        <span class="genre-row-label">🎸 Инструменты</span>
+        <div class="tag-list"><span class="tag">TR-808</span><span class="tag">Сэмплер</span><span class="tag">Скретч</span></div>
+      </div>
+      <div class="genre-row">
+        <span class="genre-row-label">🎙 Вокал</span>
+        <span class="genre-row-val">Ритмическая речь, флоу, многосложные рифмы, адлибы</span>
+      </div>
+      <div class="genre-row">
+        <span class="genre-row-label">🔊 Звук</span>
+        <span class="genre-row-val">808-бочка с «хвостом» суббаса, сэмплинг, chopping</span>
+      </div>
+      <div class="card-hint">👆 Нажмите для подробностей</div>
+    </div>
+
+    <div class="genre-card electro" onclick="openPopup('electro')">
+      <span class="genre-emoji">🎛️</span>
+      <h3>Электроника</h3>
+      <div class="genre-row">
+        <span class="genre-row-label">🎸 Инструменты</span>
+        <div class="tag-list"><span class="tag">Синтезаторы</span><span class="tag">Секвенсор</span><span class="tag">Сэмплер</span></div>
+      </div>
+      <div class="genre-row">
+        <span class="genre-row-label">🎙 Вокал</span>
+        <span class="genre-row-val">Вокодер, pitch-shift, glitch vocals — голос как тембр</span>
+      </div>
+      <div class="genre-row">
+        <span class="genre-row-label">🔊 Звук</span>
+        <span class="genre-row-val">Build-up и drop, sidechain 80–90%, wobble bass</span>
+      </div>
+      <div class="card-hint">👆 Нажмите для подробностей</div>
+    </div>
+
+  </div>
+
+  <!-- ДОПОЛНИТЕЛЬНЫЕ 6 — АККОРДЕОН -->
+  <div class="genres-extra" id="genres-extra">
+    <div class="genres-grid">
+
+      <div class="genre-card jazz" onclick="openPopup('jazz')">
+        <span class="genre-emoji">🎷</span>
+        <h3>Джаз</h3>
+        <div class="genre-row">
+          <span class="genre-row-label">🎸 Инструменты</span>
+          <div class="tag-list"><span class="tag">Контрабас</span><span class="tag">Рояль</span><span class="tag">Саксофон</span></div>
+        </div>
+        <div class="genre-row">
+          <span class="genre-row-label">🎙 Вокал</span>
+          <span class="genre-row-val">Скэт, без вибрато, джазовая фразировка «дышит»</span>
+        </div>
+        <div class="genre-row">
+          <span class="genre-row-label">🔊 Звук</span>
+          <span class="genre-row-val">Живой акустический, импровизация, уокинг-бас</span>
+        </div>
+        <div class="card-hint">👆 Нажмите для подробностей</div>
+      </div>
+
+      <div class="genre-card rnb" onclick="openPopup('rnb')">
+        <span class="genre-emoji">🤠</span>
+        <h3>Кантри / Фолк</h3>
+        <div class="genre-row">
+          <span class="genre-row-label">🎸 Инструменты</span>
+          <div class="tag-list"><span class="tag">Банджо</span><span class="tag">Педал-стил</span><span class="tag">Фидл</span></div>
+        </div>
+        <div class="genre-row">
+          <span class="genre-row-label">🎙 Вокал</span>
+          <span class="genre-row-val">Твенг, без вибрато, йодль, повествование у костра</span>
+        </div>
+        <div class="genre-row">
+          <span class="genre-row-label">🔊 Звук</span>
+          <span class="genre-row-val">Шаффл-ритм, три аккорда I–IV–V, без ударных</span>
+        </div>
+        <div class="card-hint">👆 Нажмите для подробностей</div>
+      </div>
+
+      <div class="genre-card metal" onclick="openPopup('metal')">
+        <span class="genre-emoji">🤘</span>
+        <h3>Хэви-метал</h3>
+        <div class="genre-row">
+          <span class="genre-row-label">🎸 Инструменты</span>
+          <div class="tag-list"><span class="tag">Двойная бочка</span><span class="tag">Хамбакеры</span><span class="tag">Бас-дисторшн</span></div>
+        </div>
+        <div class="genre-row">
+          <span class="genre-row-label">🎙 Вокал</span>
+          <span class="genre-row-val">Чистый тенор или гроулинг, скриминг, фрай-скрим</span>
+        </div>
+        <div class="genre-row">
+          <span class="genre-row-label">🔊 Звук</span>
+          <span class="genre-row-val">Тритон, blast beat, down-stroke, 160–240 BPM бочка</span>
+        </div>
+        <div class="card-hint">👆 Нажмите для подробностей</div>
+      </div>
+
+      <div class="genre-card reggae" onclick="openPopup('reggae')">
+        <span class="genre-emoji">⭐</span>
+        <h3>Советский рок</h3>
+        <div class="genre-row">
+          <span class="genre-row-label">🎸 Инструменты</span>
+          <div class="tag-list"><span class="tag">Акустика</span><span class="tag">«Урал»/«Форманта»</span><span class="tag">Магнитофон</span></div>
+        </div>
+        <div class="genre-row">
+          <span class="genre-row-label">🎙 Вокал</span>
+          <span class="genre-row-val">«Говорком», хрипота, срывы — эмоция вместо техники</span>
+        </div>
+        <div class="genre-row">
+          <span class="genre-row-label">🔊 Звук</span>
+          <span class="genre-row-val">Сырой магнитиздат, ошибки как эстетика, фидбэк</span>
+        </div>
+        <div class="card-hint">👆 Нажмите для подробностей</div>
+      </div>
+
+      <div class="genre-card classical" onclick="openPopup('classical')">
+        <span class="genre-emoji">🔥</span>
+        <h3>Бардовская песня</h3>
+        <div class="genre-row">
+          <span class="genre-row-label">🎸 Инструменты</span>
+          <div class="tag-list"><span class="tag">Акустическая гитара</span><span class="tag">Нейлон / сталь</span></div>
+        </div>
+        <div class="genre-row">
+          <span class="genre-row-label">🎙 Вокал</span>
+          <span class="genre-row-val">Речитатив, «высоцкий хрип», декламация, надрыв</span>
+        </div>
+        <div class="genre-row">
+          <span class="genre-row-label">🔊 Звук</span>
+          <span class="genre-row-val">Квартирник, один голос, гитара понижена на тон</span>
+        </div>
+        <div class="card-hint">👆 Нажмите для подробностей</div>
+      </div>
+
+      <div class="genre-card indie" onclick="openPopup('indie')">
+        <span class="genre-emoji">🌀</span>
+        <h3>Альтернатива</h3>
+        <div class="genre-row">
+          <span class="genre-row-label">🎸 Инструменты</span>
+          <div class="tag-list"><span class="tag">Drop D</span><span class="tag">Фузз/дилей</span><span class="tag">Обратная связь</span></div>
+        </div>
+        <div class="genre-row">
+          <span class="genre-row-label">🎙 Вокал</span>
+          <span class="genre-row-val">Шёпот→крик без предупреждения, сознательная фальшь</span>
+        </div>
+        <div class="genre-row">
+          <span class="genre-row-label">🔊 Звук</span>
+          <span class="genre-row-val">Loud-quiet-loud, feedback, атональность, лоу-фай</span>
+        </div>
+        <div class="card-hint">👆 Нажмите для подробностей</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- КНОПКА АККОРДЕОН -->
+  <div class="genres-toggle-wrap">
+    <button class="btn-toggle-genres" id="btn-toggle" onclick="toggleGenres()">
+      Показать все жанры <span class="chevron">▾</span>
+    </button>
+  </div>
+</section>
+
+<!-- BLOCK 3: SUNO -->
+<section id="suno">
+  <div class="section-label">Практика</div>
+  <h2>Как работает Suno AI</h2>
+  <p class="section-desc">Одним из наиболее популярных сервисов для создания музыки с помощью нейросетей является SUNO.</p>
+  <div class="suno-layout">
+    <div class="info-card">
+      <span class="info-card-icon">🤖</span>
+      <h4>Принцип работы</h4>
+      <p>SUNO основан на генеративном искусственном интеллекте, способном создавать музыкальные произведения по текстовым запросам. После получения запроса система автоматически генерирует: текст песни, вокальную партию, музыкальное сопровождение, аранжировку и готовый аудиофайл.</p>
+    </div>
+    <div class="info-card">
+      <span class="info-card-icon">📋</span>
+      <h4>Требования к запросу</h4>
+      <p>Для создания произведения пользователь формулирует запрос с основными характеристиками: жанр, эмоциональная окраска, стиль исполнения (гитара, бас, синт, фортепиано и др.), а также собственный текст песни (если есть). Знание стилистических особенностей помогает грамотно составить параметры.</p>
+    </div>
+    <div class="info-card">
+      <span class="info-card-icon">🌐</span>
+      <h4>Регистрация и доступ</h4>
+      <p>Для начала работы необходимо создать учётную запись — через email или аккаунт Google. После регистрации пользователь получает доступ к бесплатному тарифному плану. Для удобства можно скачать приложение SUNO в любом доступном источнике.</p>
+    </div>
+    <div class="info-card">
+      <span class="info-card-icon">💳</span>
+      <h4>Система кредитов</h4>
+      <p>Работа сервиса основана на внутренней валюте — кредитах. Каждый запуск генерации расходует определённое количество кредитов. Бесплатный тариф предоставляет ограниченное количество кредитов, которые регулярно пополняются — можно создавать песни без финансовых затрат.</p>
+    </div>
+    <div class="info-card">
+      <span class="info-card-icon">🎵</span>
+      <h4>Процесс создания</h4>
+      <p>1. Авторизация на платформе. 2. Переход в раздел создания музыки. 3. Ввод текстового описания. 4. Выбор параметров (жанр, стиль, настроение). 5. Запуск генерации. 6. Ожидание обработки запроса. 7. Прослушивание и сохранение результата. Создание занимает от нескольких секунд до нескольких минут.</p>
+    </div>
+    <div class="info-card">
+      <span class="info-card-icon">🎓</span>
+      <h4>Педагогический потенциал</h4>
+      <p>Использование SUNO в образовательной деятельности способствует развитию творческих способностей. Сервис позволяет экспериментировать с музыкальными стилями, анализировать результаты генерации и изучать построение музыкальных произведений. Работа с ИИ формирует цифровую грамотность.</p>
+    </div>
+  </div>
+</section>
+
+<!-- BLOCK 4: QUIZ -->
+<section id="quiz">
+  <div class="quiz-inner">
+    <div class="section-label">Самопроверка</div>
+    <h2>Проверьте себя:<br />знаете ли вы стилевые особенности?</h2>
+    <p class="section-desc">Пройдите короткий тест, чтобы закрепить материал и убедиться, что вы готовы к практике в Suno AI.</p>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSfJOKO8ZPi_L0RIfAS59LjoFZ-SP-lMYAlEE_DW_UqbzsI_DA/viewform?usp=publish-editor" target="_blank" class="quiz-btn">
+      Перейти к анкете <span class="arrow">→</span>
+    </a>
+    <div class="quiz-stats">
+      <div class="quiz-stat"><strong>10</strong><span>жанров изучено</span></div>
+      <div class="quiz-stat"><strong>12</strong><span>вопросов в тесте</span></div>
+      <div class="quiz-stat"><strong>~5 мин</strong><span>на прохождение</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- BLOCK 5: UPLOAD -->
+<section id="upload">
+  <div class="upload-inner">
+    <div class="section-label">Результат</div>
+    <h2>Поделись своим треком</h2>
+    <p class="section-desc">Создал песню в Suno? Отправь ссылку на трек или сам файл MP3 на почту — работа попадёт в галерею студенческих треков.</p>
+    <div class="email-card">
+      <div class="email-card-top">
+        <span class="email-icon">✉️</span>
+        <div>
+          <div class="email-label">Адрес для отправки</div>
+          <a href="mailto:zpolinaz0308@gmail.com?subject=Студенческий трек — Suno AI&body=Привет!%0A%0AОтправляю свой трек, созданный в Suno AI.%0A%0AСсылка на трек (Google Диск / SoundCloud):%0A%0AОписание (жанр, промпт):%0A" class="email-address">zpolinaz0308@gmail.com</a>
+        </div>
+      </div>
+      <div class="email-instructions">
+        <div class="email-step"><span class="step-num">1</span><span>Нажмите кнопку ниже — откроется ваш почтовый клиент</span></div>
+        <div class="email-step"><span class="step-num">2</span><span>Вставьте ссылку на трек (Google Диск, SoundCloud, Яндекс Диск) <em>или</em> прикрепите MP3-файл</span></div>
+        <div class="email-step"><span class="step-num">3</span><span>Напишите жанр и промпт, который использовали в Suno</span></div>
+        <div class="email-step"><span class="step-num">4</span><span>Отправьте — работа будет добавлена в галерею</span></div>
+      </div>
+      <a href="mailto:zpolinaz0308@gmail.com?subject=Студенческий трек — Suno AI&body=Привет!%0A%0AОтправляю свой трек, созданный в Suno AI.%0A%0AСсылка на трек (Google Диск / SoundCloud):%0A%0AОписание (жанр, промпт):%0A" class="btn-email">
+        📨 Отправить трек на почту
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>Курсовая работа · Гид по созданию песен с помощью нейросети Suno</p>
+  <p style="margin-top:0.4rem;">Учебный проект — не является коммерческим продуктом</p>
+</footer>
+
+<script>
+// ===================== ДАННЫЕ ЖАНРОВ =====================
+const genreData = {
+  pop: {
+    emoji: '🎤',
+    title: 'Поп',
+    stripe: 'linear-gradient(90deg,#FF5F87,#FF9AC1)',
+    tagColor: '#C2185B',
+    tagBg: '#FFE8EF',
+    about: 'Поп-музыка — сокращение от «popular music». Её главная задача — понравиться как можно большему количеству людей здесь и сейчас. Поп ищет «крючок» — мелодию или фразу, которая застревает в голове с первого раза. Он максимально гибок: впитывает всё модное (бит хип-хопа, звук электроники, драйв рока), но переваривает в коммерчески успешную форму. Тексты о любви, вечеринках, расставаниях — о том, что понятно каждому. Главный враг попа — диссонанс, сложность, долгие вступления.',
+    artists: 'Майкл Джексон — Billie Jean, Thriller · Мадонна — Vogue, Like a Prayer · Бритни Спирс — Toxic · ABBA — Dancing Queen · РФ: «Руки Вверх!», МакSим, Меладзе',
+    instruments: ['Драм-машина (four-on-the-floor)', 'Синтезаторы — пэд и плак', 'Синтезированный бас (стаккато)', 'Акустическая гитара (мут)', 'Bэк-вокал в терцию / квинту'],
+    vocal: 'Основа — легато: певец плавно перетекает с одного слога на другой, взрывные согласные сглажены. В припеве — белтинг: громкое, плотное пение на верхней границе среднего регистра, на грани срыва связок, но без хрипоты. Между фразами — адлибы («yeah», «ooh», «baby»). Синкопы: певец начинает фразу чуть позже или раньше удара — «лежать на бите». Автотюн используется и для коррекции, и как намеренный эффект роботизации.',
+    sound: 'Глянцевый, плотный радиоформатный микс. Sidechain-компрессия: громкость синтезаторов «падает» под удар бочки, создавая пульсацию — будто трек вдыхает и выдыхает. Квантование — всё идеально ровно по сетке, без живого «свинга». Широкий стерео-образ, подчёркнутый суббас.',
+    structure: 'Интро (4–8 тактов) → Куплет → Припев → Куплет 2 → Припев → Бридж (8 тактов, момент сомнения) → Финальный припев (часто с модуляцией на полтона вверх) → Аутро (fade out)',
+    bpm: '100–130 BPM',
+    prompt: '[Pop, female vocals, catchy melody, piano and synth, sidechain compression, 120 BPM, verse-chorus structure, lyrics about summer]'
+  },
+  rock: {
+    emoji: '🎸',
+    title: 'Рок',
+    stripe: 'linear-gradient(90deg,#FF6B35,#FF9A3C)',
+    tagColor: '#BF360C',
+    tagBg: '#FFF0E8',
+    about: 'Рок возник в 1950–60-х как бунтарский отпор гладкой поп-музыке. В основе — живая группа: гитары, бас, барабаны, всё играет одновременно в одной комнате. Главная ценность — честность и драйв. Искажённая гитара (дисторшн, овердрайв) стала голосом поколения. Тексты о свободе, политике, внутренней борьбе. Жанр разветвился: от мелодичного поп-рока до хард-рока и панка.',
+    artists: 'The Beatles — Hey Jude · Queen — Bohemian Rhapsody · Led Zeppelin — Stairway to Heaven · Deep Purple — Smoke on the Water · РФ: Сплин, Пикник, Наутилус Помпилиус',
+    instruments: ['Электрогитара — овердрайв / дисторшн', 'Живые ударные (бэкбит на 2 и 4)', 'Бас-гитара (пальцами или медиатором)', 'Ритм-гитара + соло-гитара', 'Орган Хаммонда (опционально)'],
+    vocal: 'Грудное пение с сильной диафрагмальной опорой — плотный, насыщенный звук с естественной хрипотцой. Рок-крик: чистый сильный крик в верхней части грудного регистра, звучит напряжённо, на грани срыва. Широкое, медленное вибрато — 4–5 колебаний в секунду, как гитарный бенд. Рваный ритм: фразировка ближе к разговорной, с чёткими акцентами на сильных долях.',
+    sound: 'Только живые инструменты — никаких драм-машин и сэмплов. Пауэр-аккорды (тоника + квинта) с пальмовым мьютингом — струны звучат глухо, «кашеобразно». Риффы — короткие повторяющиеся фразы в нижней части грифа. Бенды и вибрато в соло-партиях. Ритм «дышит» — может слегка ускоряться. Громкость концерта — 110–120 дБ.',
+    structure: 'Вступление с гитарным риффом → Куплет → Припев → Куплет 2 → Припев → Гитарное соло (2–4 мин в прог-роке) → Бридж → Финальный припев → Аутро',
+    bpm: '120–160 BPM',
+    prompt: '[Rock, male vocals, electric guitar overdrive, power chords, live drums, palm muting riff, 140 BPM, lyrics about freedom and rebellion]'
+  },
+  hiphop: {
+    emoji: '🎙',
+    title: 'Хип-хоп',
+    stripe: 'linear-gradient(90deg,#7B2FFF,#00C6A2)',
+    tagColor: '#5B21B6',
+    tagBg: '#EDE6FF',
+    about: 'Хип-хоп зародился в конце 1970-х в Бронксе как культура из четырёх элементов: диджеинг, MCинг (рэп), би-бойинг (брейк-данс) и граффити. Главное — ритм и текст. Артист не поёт, а рэпует — произносит рифмованные строки в такт биту. Для создания трека достаточно двух проигрывателей и микрофона. Сейчас это самая популярная музыка в мире среди молодёжи.',
+    artists: 'Tupac — Dear Mama · Eminem — Lose Yourself · Kendrick Lamar — HUMBLE. · Jay-Z — 99 Problems · РФ: Oxxxymiron, Каста, Баста, Хаски',
+    instruments: ['Драм-машина (TR-808 / TR-909)', 'Сэмплер — фрагменты старых пластинок', '808-бочка (длинный «хвост» суббаса)', 'Хай-хэт (шестнадцатые + триоли в трэпе)', 'Скретч на вертушках'],
+    vocal: 'Это не пение — ритмическая речь. Рэпер попадает в бит с точностью до 1/32 доли. Флоу — рисунок ритма: прямой, растянутый, рваный или свингующий. Многосложные рифмы, внутренние рифмы, ассонанс. Опоздание создаёт эффект «layback» — ленивую, качающуюся подачу; опережение — агрессивную, напористую. Адлибы («yeah», «uh», «skrrt») за кадром имитируют живой диалог.',
+    sound: 'Основа — бит из драм-машины. Сэмплинг: фрагменты пластинок зациклены в loop. Chopping — нарезка сэмпла на кусочки по 1/16 и перестановка для новой мелодии. 808-бочка с долгим затуханием на суббасе. В трэпе — пулемётные хай-хэты с роллами и триолями. Стоп-тайм: бит внезапно обрывается, остаётся один голос — создаёт напряжение.',
+    structure: 'Интро (фрагмент записи / телефонный разговор) → Куплет (16 тактов) → Хук (8 тактов) → Куплет 2 → Хук → Куплет 3 → Бридж (смена бита) → Хук → Аутро',
+    bpm: '70–100 BPM',
+    prompt: '[Hip-hop, male rap vocals, 808 bass, boom-bap drums, trap hi-hat rolls, 90 BPM, verse-hook structure, sidechain, lyrics about city life]'
+  },
+  electro: {
+    emoji: '🎛',
+    title: 'Электронная музыка',
+    stripe: 'linear-gradient(90deg,#00C6A2,#2196F3)',
+    tagColor: '#00796B',
+    tagBg: '#E0FAF5',
+    about: 'Электронная музыка — огромная вселенная, где звук создаётся синтезаторами, драм-машинами, сэмплерами и компьютерами. Зародилась в 1970-х, взорвалась в 80–90-х (хаус, техно, транс). Главное — не живое исполнение, а программирование. Ценится тембр (уникальный цвет звука), ритмическая сложность и динамическое развитие: нарастание → дроп — внезапный провал в тяжёлый бит.',
+    artists: 'Kraftwerk — Autobahn · Daft Punk — One More Time · The Prodigy — Firestarter · Aphex Twin — Windowlicker · РФ: Kedr Livanskiy, Nina Kraviz',
+    instruments: ['Синтезаторы (Moog, Serum, Massive)', 'Драм-машины (TR-808, TR-909)', 'Секвенсор — Ableton Live / FL Studio', 'Сэмплер', 'LFO и фильтры (ADSR-огибающая)'],
+    vocal: 'Голос — тембровый слой, а не центр. Вокодер разбивает сигнал на частотные полосы и накладывает синтезированные ноты — роботизированный эффект (Daft Punk — Harder, Better, Faster, Stronger). Pitch-shifted вокал: поднятый на октаву («эльфийский») или опущенный («демонический»). Glitch vocals — фраза разрезается на микро-слоги (50–200 мс) и переставляется в произвольном порядке.',
+    sound: 'Build-up и drop — главный приём. Нарастание: хай-хэт учащается, белый шум нарастает, фильтр открывается, тон повышается. Дроп: резкий обрыв всего — и тяжёлый бит с пульсирующим басом. Sidechain до 80–90% — бас «исчезает» под удар бочки. Wobble bass в дабстепе: LFO открывает и закрывает фильтр 5–10 раз в секунду.',
+    structure: 'Интро (только ритм, без бочки) → Build-up → Первый дроп → Брейкдаун (убирается бит, нарастает белый шум) → Второй дроп (тяжелее первого) → Аутро (затухание слоёв)',
+    bpm: 'Хаус: 120–128 · Техно: 130–150 · Транс: 135–145 · Драм-н-бейс: 160–180 · Дабстеп: 140 BPM',
+    prompt: '[Electronic, EDM, no lyrics, vocoder female voice, arpeggio synth, sidechain compression, build-up and drop, 128 BPM, four-on-the-floor]'
+  },
+  jazz: {
+    emoji: '🎷',
+    title: 'Джаз',
+    stripe: 'linear-gradient(90deg,#B8860B,#DAA520)',
+    tagColor: '#B8860B',
+    tagBg: '#FFF8E1',
+    about: 'Джаз родился в конце XIX — начале XX века в Новом Орлеане. Это сплав африканских ритмов, европейской гармонии и блюзовых нот. Главное — импровизация: вместо нот из партитуры музыкант сочиняет их прямо на ходу, опираясь на аккордовый каркас. Каждый концерт уникален. Ценятся виртуозность, слух, чувство ансамбля и смелость.',
+    artists: 'Луи Армстронг — What a Wonderful World · Майлз Дэвис — So What · Джон Колтрейн — Giant Steps · Элла Фицджеральд — Summertime · РФ: Игорь Бутман, Лариса Долина',
+    instruments: ['Контрабас — пиццикато, уокинг-бас', 'Рояль — войсинги (терция + септима)', 'Труба / саксофон / тромбон', 'Ударные — щётки (шипящий звук «шшш»)', 'Гитара (в малых составах)'],
+    vocal: 'Скэт — пение на бессмысленные слоги, имитирующее инструментальное соло: «ду-бэ-бэ», «ша-ба-да». Голос без вибрато или с очень мелким — «инструментальный», ясный тембр. Постоянное глиссандо между нотами. Джазовая фразировка «дышит» и отстаёт от ритма — создаёт расслабленное свинговое ощущение. Техника «вздоха» Билли Холидей: каждая нота как будто выдыхается, с придыханием.',
+    sound: 'Живой акустический звук — никаких драм-машин, сэмплов, автотюна. Свинг — нельзя записать в ноты: первая восьмая чуть длиннее (2/3 доли), вторая короче (1/3). Уокинг-бас: четвертными нотами без пауз, «проходя» по нотам от аккорда к аккорду. Импровизация строится на мотивах — коротких фразах из 2–5 нот с началом, развитием и кульминацией.',
+    structure: 'Интро (4 такта ритм-секции) → Тема (head) → Импровизационные соло по кругу (32 такта каждый) → Обмен «четвертями» (trading fours) → Повтор темы → Аутро',
+    bpm: '60–220 BPM (свинг 120–180, баллады 60–80)',
+    prompt: '[Jazz, female vocals, upright bass, piano, saxophone, swing rhythm, 90 BPM, late night club atmosphere, scat improvisation, brushes on drums]'
+  },
+  rnb: {
+    emoji: '🤠',
+    title: 'Кантри / Фолк',
+    stripe: 'linear-gradient(90deg,#C2185B,#E91E8C)',
+    tagColor: '#C2185B',
+    tagBg: '#FCE4EC',
+    about: 'Кантри выделилось из американского фолка 1920-х на юге США — это музыка фермеров, ковбоев, рабочих. Главные темы: дом, дорога, семья, потерянная любовь, тяжёлый труд. Инструментарий простой: акустическая гитара, скрипка (фидл), банджо, губная гармоника, педал-стил. Вокал с «твенгом» — носовым, деревенским оттенком. Главное — искренность и повествование.',
+    artists: 'Джонни Кэш — Ring of Fire · Долли Партон — Jolene · Хэнк Уильямс — Hey, Good Lookin\' · Вилли Нельсон — On the Road Again · Боб Дилан — Blowin\' in the Wind · РФ: Мельница, Пелагея',
+    instruments: ['Акустическая гитара (стальные струны, flatpicking / fingerpicking)', 'Банджо 5-струнное (техника ролл)', 'Педал-стил гитара (плачущий скользящий звук)', 'Фидл (скрипка) без вибрато', 'Губная гармоника (бенды, кросс-хорп)'],
+    vocal: 'Твенг — носовой плоский звук как стилизация под южный говор. Нота берётся чисто и держится ровно, без вибрато. Йодль — быстрые переключения между грудным голосом и фальцетом на одной гласной. Прямое повествование у костра — фразировка разговорная. Глиссандо в конце фраз: голос сползает вниз на терцию — придаёт усталость и грусть.',
+    sound: 'Шаффл-ритм — триольное раскачивание. Три аккорда I–IV–V — на них построены тысячи песен. Педал-стил даёт «плачущий» звук без ритмической привязки: нота «вздыхает» после атаки. Банджо — непрерывный поток шестнадцатых нот. Ударных в традиционном кантри почти нет — вместо них хлопки ладонями.',
+    structure: 'Куплет 1 (сюжет) → Припев → Куплет 2 → Припев → Бридж → Куплет 3 (развязка) → Финальный припев (замедленно или двойной) → Аутро',
+    bpm: '80–120 BPM',
+    prompt: '[Country folk, male vocals, acoustic guitar, banjo roll, pedal steel guitar, shuffle rhythm, 95 BPM, storytelling lyrics about home and road]'
+  },
+  metal: {
+    emoji: '🤘',
+    title: 'Хэви-метал',
+    stripe: 'linear-gradient(90deg,#424242,#9E9E9E)',
+    tagColor: '#424242',
+    tagBg: '#F5F5F5',
+    about: 'Хэви-метал возник в конце 1960-х как утяжелённая версия рока (Black Sabbath, Deep Purple). Главное отличие — громкость, тяжесть, мрачность. Темы: смерть, война, мифология, фэнтези, хаос. За «шумом» стоит виртуозная техника: шред-соло, сложные размеры (5/4, 7/8), тритоны. Десятки поджанров: трэш, дэт, блэк, пауэр, дум, прог.',
+    artists: 'Black Sabbath — Paranoid, Iron Man · Iron Maiden — The Number of the Beast · Metallica — Master of Puppets · Judas Priest — Painkiller · РФ: Ария, Коррозия Металла',
+    instruments: ['Электрогитара с хамбакерами (максимальный гейн)', 'Двойная бас-бочка (blast beat, 160–240 BPM)', 'Бас с дисторшном / фуззом', 'Тарелки: крэш, чайна, сплэш', 'Только живые инструменты'],
+    vocal: 'Два полюса. Чистый (пауэр-метал): высокий пронзительный тенор на верхней границе голоса, широкое медленное вибрато (Брюс Дикинсон). Экстремальный: гроулинг — низкое рычание через ложные голосовые связки; скриминг — высокий визжащий звук похожий на крик боли; фрай-скрим — «рассыпчатый» шипящий звук, самый безопасный. Всё требует техники, иначе связки садятся за один концерт.',
+    sound: 'Пауэр-аккорд с добавленной октавой (до-соль-до). Down-stroke на каждую ноту — «пулемётный» рифф. Тритон («дьявольский интервал»): звучит зловеще, неустойчиво. Blast beat: бочка, малый и хай-хэт играют одновременно, создавая однородный шум. Свип-пикинг в соло — «водопад» нот на скорости 16–20 нот/сек.',
+    structure: 'Инструментальное вступление → Рифф A → Куплет (рифф B) → Припев → Гитарное соло (30–90 сек, шред) → Бридж (смена темпа) → Куплет 2 → Припев → Аутро',
+    bpm: '80–250 BPM',
+    prompt: '[Heavy metal, male vocals, distorted downtuned guitars, double bass drum, power chords, tritone riff, 160 BPM, dark fantasy lyrics, guitar solo]'
+  },
+  reggae: {
+    emoji: '⭐',
+    title: 'Советский рок',
+    stripe: 'linear-gradient(90deg,#2E7D32,#CDDC39)',
+    tagColor: '#2E7D32',
+    tagBg: '#F1F8E9',
+    about: 'Советский рок — уникальное явление, возникшее в СССР в 1970–80-е в подполье. Рок там был формой свободомыслия, протестом против системы. Из-за цензуры песни распространялись через магнитиздат — перезапись катушечных магнитофонов. Звук был сырым и плохо записанным, но это придавало ему подлинность. Тематика: тоска по свободе, абсурд, социальная сатира, война (Афганистан), надежда.',
+    artists: 'Виктор Цой / «Кино» — Группа крови, Перемен · «Аквариум» — Город золотой · «ДДТ» — Что такое осень · «Алиса» — Трасса Е-95 · Янка Дягилева — Особый резон',
+    instruments: ['Акустическая гитара (бой Цоя, шестёрка)', 'Советская электрогитара «Урал» / «Форманта»', 'Бас-гитара (пальцами, дефицит медиаторов)', 'Ударные (редко, часто заменялись магнитофонным ритмом)', 'Клавишные Roland Juno-60 (поздний «Кино»)'],
+    vocal: 'Говорком — интонация обычной речи, на трёх-четырёх нотах (Цой: устало констатировал факты). Срывы на крик в припевах без опоры (Шевчук). Хрипота — от холода, усталости, реальной жизни — стала частью канона. Шипение и шепот в акустических куплетах создают исповедальный тон. Глиссандо вверх в конце строки — голос поднимается на терцию, придавая вопросительность.',
+    sound: 'Запись на бытовой магнитофон («Яуза») — слышны ошибки, шумы, перегруз ленты. Это стало эстетикой. Песни писались вживую одним дублем. Бой сверху вниз имитирует ударные. Фидбэк (обратная связь) — гитара воет от громкости. Никакого продюсерского глянца — подпольная, магнитиздатная правда.',
+    structure: 'Куплет 1 → Припев → Куплет 2 → Припев → Куплет 3 → Финальный припев. Аккорды Em–C–G–D или Am–F–C–G. Поэтический текст важнее музыкального развития. Длина 3–5 минут.',
+    bpm: '80–130 BPM',
+    prompt: '[Soviet rock, male vocals, acoustic guitar strumming, raw lo-fi recording, emotional delivery, simple chords, 100 BPM, introspective Russian lyrics]'
+  },
+  classical: {
+    emoji: '🔥',
+    title: 'Бардовская песня',
+    stripe: 'linear-gradient(90deg,#5C4A1E,#A0845C)',
+    tagColor: '#795548',
+    tagBg: '#FFF3E0',
+    about: 'Бардовская (авторская) песня возникла в СССР в 1950–60-х как альтернатива официальной эстраде. Это камерный жанр: один человек — поэт, композитор, исполнитель — аккомпанирует себе на акустической гитаре. Главное — слово, текст, смысл. Музыка вторична. Темы: человеческое достоинство, совесть, любовь, ирония над абсурдом бытия. Барды не кричат — они тихо разговаривают со слушателем как с другом.',
+    artists: 'Булат Окуджава — Надежды маленький оркестрик · Владимир Высоцкий — Кони привередливые · Александр Галич — Облака · Юрий Визбор — Милая моя · Никитины — Под музыку Вивальди',
+    instruments: ['Акустическая гитара (нейлон — мягкий звук, сталь — яркий)', 'Семиструнная гитара (иногда)', 'Никаких усилителей, перегруза, ударных'],
+    vocal: '«Высоцкий хрип» — голос поёт «через грязь», с напряжением шейных мышц, неполным смыканием связок. Звучит больно и искренне. Речитатив: узкая мелодика в пределах терции-кварты, приближаясь к разговорной речи. Декламация — длинные куски читаются как стихи под продолжающуюся гитару. Драматическая смена тембра: от шёпота к крику без плавного перехода.',
+    sound: 'Квартирник, институтская аудитория или костёр — никаких лазеров и шоу. Бой плоскими пальцами — звук тихий, мягкий. Удар по деке имитирует ударные. Гитара часто понижена на тон-полтора — тембр «виолончельный». «Ленивый перебор» создаёт медитативный фон для стиха. Голос ведёт свою линию независимо от ритма гитары.',
+    structure: 'Куплетная форма — 3–6 куплетов на одну мелодию. Квадрат из 8–16 тактов повторяется 4–8 раз. Без модуляций, без инструментальных соло. По сути — стихи, положенные на гитарный аккомпанемент. Длина 2–8 минут.',
+    bpm: '60–90 BPM',
+    prompt: '[Russian bard song, male vocals, acoustic guitar fingerpicking, intimate and confessional, simple chords, spoken word, 70 BPM, poetic Russian lyrics]'
+  },
+  indie: {
+    emoji: '🌀',
+    title: 'Альтернативный стиль',
+    stripe: 'linear-gradient(90deg,#7E57C2,#26C6DA)',
+    tagColor: '#512DA8',
+    tagBg: '#EDE7F6',
+    about: 'Альтернативный рок — зонтичный термин для рок-музыки, сознательно отказывающейся от мейнстрима. Возник в 1980-х как реакция на гламурный поп-метал. «Альтернатива» означает: диссонирующие строи, нестандартная структура, тексты о тревожности и отчуждении. Главное — аутентичность, лоу-фай, отсутствие глянца. В 1990-х гранж (Nirvana) и брит-поп стали коммерчески успешными.',
+    artists: 'Nirvana — Smells Like Teen Spirit · Radiohead — Paranoid Android · Sonic Youth — Teen Age Riot · РФ: Сплин, Земфира, Смысловые Галлюцинации, Мумий Тролль',
+    instruments: ['Электрогитара (альтернативный строй, Drop D)', 'Бас-гитара', 'Ударные (без двойной бочки, «человеческая» пульсация)', 'Педали: фузз, дилей, фленжер', 'Дешёвые клавишные Farfisa / органчик'],
+    vocal: 'Надрыв без красоты: сознательная фальшь на полтона добавляет тревожность и отчуждённость. Шёпот в куплетах — мгновенный взрыв в истеричный крик в припеве, без предупреждения. Кобейн использовал фальцет на верхних нотах при крике — ломало голос, но давало неподдельную боль. Задержка (delay) на голосе создаёт ощущение пустоты и эха.',
+    sound: 'Loud-quiet-loud: тихий чистый куплет — взрывной грязный припев (Pixies, Nirvana). Feedback: гитара воет у усилителя, ритмически закрываются струны. Drop D — пауэр-аккорд одним пальцем. Атональность и кластеры: специально «неправильные» ноты. Ритм «разболтанный» — барабанщик слегка торопится или отстаёт.',
+    structure: 'Гибкая, нестандартная. Возможно: Тихое интро → Куплет (чистая гитара) → Взрывной припев → Инструментальная часть → Финал с обрывом на слабой доле. Припев может появиться только один раз.',
+    bpm: '80–140 BPM',
+    prompt: '[Alternative rock, male vocals, distorted guitar, loud-quiet-loud dynamics, Drop D, lo-fi recording, 110 BPM, angsty introspective lyrics, feedback noise]'
+  }
+};
+
+// ===================== ПОПАП =====================
+function openPopup(key) {
+  const d = genreData[key];
+  if (!d) return;
+
+  document.getElementById('popup-stripe').style.background = d.stripe;
+  document.getElementById('popup-emoji').textContent = d.emoji;
+  document.getElementById('popup-title').textContent = d.title;
+
+  const tags = d.instruments.map(i =>
+    `<span class="popup-tag" style="background:${d.tagBg};color:${d.tagColor}">${i}</span>`
+  ).join('');
+
+  document.getElementById('popup-body').innerHTML = `
+    <div class="popup-section">
+      <div class="popup-section-title">📖 О жанре</div>
+      <p>${d.about}</p>
+    </div>
+    <hr class="popup-divider">
+    <div class="popup-section">
+      <div class="popup-section-title">🌟 Яркие представители</div>
+      <p>${d.artists}</p>
+    </div>
+    <hr class="popup-divider">
+    <div class="popup-section">
+      <div class="popup-section-title">🎸 Инструментальная палитра</div>
+      <div class="popup-tag-list">${tags}</div>
+    </div>
+    <hr class="popup-divider">
+    <div class="popup-section">
+      <div class="popup-section-title">🎙 Вокальные особенности</div>
+      <p>${d.vocal}</p>
+    </div>
+    <hr class="popup-divider">
+    <div class="popup-section">
+      <div class="popup-section-title">🔊 Звук и миксование</div>
+      <p>${d.sound}</p>
+    </div>
+    <hr class="popup-divider">
+    <div class="popup-section">
+      <div class="popup-section-title">📐 Типичная структура трека</div>
+      <p>${d.structure}</p>
+    </div>
+    <div class="popup-section">
+      <div class="popup-section-title">⏱ Темп</div>
+      <p>${d.bpm}</p>
+    </div>
+    <hr class="popup-divider">
+    <div class="popup-section">
+      <div class="popup-section-title">🎯 Пример промпта для Suno AI</div>
+      <div class="popup-example">${d.prompt}</div>
+    </div>
+  `;
+
+  document.getElementById('popup-overlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePopup() {
+  document.getElementById('popup-overlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function closePopupOnOverlay(e) {
+  if (e.target === document.getElementById('popup-overlay')) closePopup();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
+
+// ===================== АККОРДЕОН =====================
+let genresOpen = false;
+
+function toggleGenres() {
+  genresOpen = !genresOpen;
+  const extra = document.getElementById('genres-extra');
+  const btn = document.getElementById('btn-toggle');
+  extra.classList.toggle('open', genresOpen);
+  btn.classList.toggle('open', genresOpen);
+  btn.innerHTML = genresOpen
+    ? 'Скрыть <span class="chevron">▾</span>'
+    : 'Показать все жанры <span class="chevron">▾</span>';
+}
+
+// ===================== СЛУЧАЙНЫЙ ПРОМПТ =====================
+const prompts = [
+  { genre: '🎤 Поп',             text: '[Pop, female vocals, catchy melody, piano and synth, sidechain compression, 120 BPM, verse-chorus structure, lyrics about summer]' },
+  { genre: '🎸 Рок',             text: '[Rock, male vocals, electric guitar overdrive, power chords, live drums, palm muting riff, 140 BPM, lyrics about freedom and rebellion]' },
+  { genre: '🎙 Хип-хоп',        text: '[Hip-hop, male rap vocals, 808 bass, boom-bap drums, trap hi-hat rolls, 90 BPM, verse-hook structure, sidechain, lyrics about city life]' },
+  { genre: '🎛 Электроника',    text: '[Electronic, EDM, no lyrics, vocoder female voice, arpeggio synth, sidechain compression, build-up and drop, 128 BPM, four-on-the-floor]' },
+  { genre: '🎷 Джаз',           text: '[Jazz, female vocals, upright bass, piano, saxophone, swing rhythm, 90 BPM, late night club atmosphere, scat improvisation, brushes on drums]' },
+  { genre: '🪗 Кантри / Фолк', text: '[Country folk, male vocals, acoustic guitar, banjo roll, pedal steel guitar, shuffle rhythm, 95 BPM, storytelling lyrics about home and road]' },
+  { genre: '🤘 Хэви-метал',     text: '[Heavy metal, male vocals, distorted downtuned guitars, double bass drum, power chords, tritone riff, 160 BPM, dark fantasy lyrics, guitar solo]' },
+  { genre: '🎙 Советский рок',  text: '[Soviet rock, male vocals, acoustic guitar strumming, raw lo-fi recording, emotional delivery, simple chords, 100 BPM, introspective Russian lyrics]' },
+  { genre: '🔥 Бардовская',      text: '[Russian bard song, male vocals, acoustic guitar fingerpicking, intimate and confessional, simple chords, spoken word, 70 BPM, poetic Russian lyrics]' },
+  { genre: '🌀 Альтернатива',   text: '[Alternative rock, male vocals, distorted guitar, loud-quiet-loud dynamics, Drop D, lo-fi recording, 110 BPM, angsty introspective lyrics, feedback noise]' }
+];
+
+let lastIdx = 0;
+function randomPrompt() {
+  let idx;
+  do { idx = Math.floor(Math.random() * prompts.length); } while (idx === lastIdx && prompts.length > 1);
+  lastIdx = idx;
+  const p = prompts[idx];
+  const el = document.getElementById('prompt-display');
+  el.style.opacity = 0;
+  setTimeout(() => {
+    el.value = p.text;
+    document.getElementById('current-genre').textContent = p.genre;
+    el.style.transition = 'opacity 0.3s';
+    el.style.opacity = 1;
+  }, 180);
+}
+</script>
+</body>
+</html>
